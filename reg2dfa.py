@@ -42,8 +42,9 @@ def processing(S):
     values = {'null' : "null"}
     followpos={}
     stack = [];
+    alphabets = set()
     root = node("root")
-    print('in-order traversal of the tree : ')
+    print('\nin-order traversal of the tree : \n')
     for c in S:
         if(c=='.' or c=='|'):
             b=stack.pop()
@@ -112,6 +113,7 @@ def processing(S):
         else:
             node.count+=1
             values[node.count]=c
+            alphabets.add(c)
             new=node("alphabet")
             new.index=node.count
             new.nullable = False
@@ -119,12 +121,40 @@ def processing(S):
             new.lastpos = set([node.count])
             stack.append(new)
     print_tree(root,values)
-    print("Total leaf nodes : ",node.count)
-    print("followpos :",followpos)
+    print("\nTotal leaf nodes : ",node.count)
+    print("\nfollowpos :")
+    for f in followpos:
+        print(f," --> ",followpos[f])
+
+    Trans = {}
+    Visited = []
+    STATES = {tuple(root.firstpos) : 'A'}
+    counter = 'A'
+    Dstates = set([tuple(root.firstpos)])
+    while(len(Dstates)>0):
+        curr_state = Dstates.pop()
+        temp=set()
+        curr = STATES[curr_state]
+        for c in alphabets:
+            temp.clear()
+            for d in curr_state:
+                if(values[d]==c):
+                    temp = temp|followpos[d]
+            if(tuple(temp)not in STATES):
+                counter=chr(ord(counter) + 1)
+                STATES[tuple(temp)] = counter
+            Trans[tuple([curr,c])]=STATES[tuple(temp)]
+            if(temp not in Visited):
+                Dstates.add(tuple(temp))
+        Visited.append(set(curr_state))
+        #print(len(Dstates))
+    print("\nTransition States of the DFA are :\n('A' is starting position)\n") 
+    for t in Trans:
+        print(t," --> ",Trans[t])
     return
 
 S=input("Enter infix regular expression (operators are '.' or '|' or '*' or '(' or ')' ) :  ")
 new=infix2postfix(S)
 new=new+'#'
-print(new)
+print("postfix Expreession of the input :\n",new)
 processing(new)

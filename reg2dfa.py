@@ -40,6 +40,7 @@ def infix2postfix(S):
 def processing(S):
     types = {'.':"cat", '|':"or", '*':"star" }
     values = {'null' : "null"}
+    followpos={}
     stack = [];
     root = node("root")
     print('in-order traversal of the tree : ')
@@ -48,8 +49,6 @@ def processing(S):
             b=stack.pop()
             a=stack.pop()
             new = node(types[c])
-            new.left=a
-            new.right=b
             if(c=='.'):
                 new.nullable = a.nullable and b.nullable
                 if(a.nullable):
@@ -60,14 +59,26 @@ def processing(S):
                     new.lastpos = a.lastpos|b.lastpos
                 else:
                     new.lastpos = b.lastpos
+                for i in a.lastpos:
+                	if(i in followpos):
+                		followpos[i]=followpos[i]|b.firstpos
+                	else:
+                		followpos[i]=b.firstpos
             else:
                 new.nullable = a.nullable or b.nullable
                 new.firstpos = a.firstpos|b.firstpos
                 new.lastpos = a.lastpos|b.lastpos
             new.index = 'null'
+            new.left=a
+            new.right=b
             stack.append(new)
         elif(c=='*'):
             a=stack.pop()
+            for i in a.lastpos:
+                	if(i in followpos):
+                		followpos[i]=followpos[i]|a.firstpos
+                	else:
+                		followpos[i]=a.firstpos
             new = node(types[c])
             new.down = a
             new.nullable = True
@@ -81,15 +92,23 @@ def processing(S):
             a=stack.pop()
             b=node("finish")
             b.index=node.count
-            b.nullable = True
-            b.firstpos=[]
-            b.lastpos=[]
+            b.nullable = False
+            b.firstpos=set([node.count])
+            b.lastpos=set([node.count])
             root.left=a
             root.right=b
             root.index='null'
-            root.nullable = a.nullable
-            root.firstpos = a.firstpos
-            root.lastpos = a.lastpos
+            root.nullable = False
+            if(a.nullable):
+                root.firstpos = a.firstpos|b.firstpos
+            else:
+                root.firstpos = a.firstpos
+            root.lastpos = b.lastpos
+            for i in a.lastpos:
+                	if(i in followpos):
+                		followpos[i]=followpos[i]|b.firstpos
+                	else:
+                		followpos[i]=b.firstpos
         else:
             node.count+=1
             values[node.count]=c
@@ -101,6 +120,7 @@ def processing(S):
             stack.append(new)
     print_tree(root,values)
     print("Total leaf nodes : ",node.count)
+    print("followpos :",followpos)
     return
 
 S=input("Enter infix regular expression (operators are '.' or '|' or '*' or '(' or ')' ) :  ")
